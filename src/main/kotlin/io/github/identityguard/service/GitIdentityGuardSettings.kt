@@ -11,8 +11,8 @@ import com.intellij.openapi.components.service
  * 插件全局设置（application 级，设计文档 §4）。
  *
  * 默认值取舍说明：
- * - preCommitCheckEnabled 默认 false：通知（方案 A）是主通道、干扰小；
- *   Commit 前强校验（方案 B）属于用户可选的更严格模式；
+ * - preCommitCheckEnabled 默认 true：Commit 前强校验（方案 B）是防错误身份
+ *   落盘提交的兜底防线；通知（方案 A）仅为建议、不拦截提交。用户可在设置页关闭；
  * - lenientPassMode 默认 false：严格模式是文档 F2.3 的基线行为，
  *   宽松放行（F3.2）是为"故意使用公开已验证邮箱"的用户提供的缓解手段。
  */

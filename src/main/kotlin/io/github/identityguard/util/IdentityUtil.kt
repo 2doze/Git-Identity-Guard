@@ -42,4 +42,20 @@ object IdentityUtil {
      */
     fun synthesizeNoreplyEmail(numericId: Long, login: String): String =
         "$numericId+${login.trim().lowercase()}$NOREPLY_SUFFIX"
+
+    /**
+     * 日志脱敏：仅保留本地部分首字符与域名，如 `a***@example.com`。
+     *
+     * 生效邮箱可能是用户的真实私人邮箱，明文写入 idea.log 属于隐私泄漏
+     * （插件本身的职责就是防止这类邮箱外流），因此日志输出前必须脱敏。
+     * null 原样返回，由调用方决定占位文案。
+     */
+    fun maskEmail(email: String?): String? {
+        if (email == null) return null
+        val at = email.indexOf('@')
+        if (at <= 0) return "***"
+        val local = email.substring(0, at)
+        val maskedLocal = if (local.isEmpty()) "*" else local[0] + "*".repeat(local.length - 1)
+        return maskedLocal + email.substring(at)
+    }
 }

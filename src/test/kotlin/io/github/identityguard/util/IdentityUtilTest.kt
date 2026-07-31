@@ -51,4 +51,17 @@ class IdentityUtilTest {
             IdentityUtil.synthesizeNoreplyEmail(12345, "Alice")
         )
     }
+
+    @Test
+    fun `email masking keeps only the local prefix and domain`() {
+        assertEquals("a****@example.com", IdentityUtil.maskEmail("alice@example.com"))
+        assertEquals("x***@users.noreply.github.com", IdentityUtil.maskEmail("xqiu@users.noreply.github.com"))
+        assertEquals(null, IdentityUtil.maskEmail(null))
+    }
+
+    @Test
+    fun `email masking hides malformed values completely`() {
+        assertEquals("***", IdentityUtil.maskEmail("no-at-sign"))
+        assertEquals("***", IdentityUtil.maskEmail(""))
+    }
 }

@@ -22,6 +22,15 @@ class PrivacyEmailCacheEntry {
     /** 是否走了合成回退路径（设置页展示"合成邮箱"状态用） */
     var usedFallback: Boolean = false
 
+    /** 最近一次成功获取的时间戳（epoch millis）；0 = 从未成功过 */
+    var fetchedAt: Long = 0
+
+    /**
+     * 最近一次获取尝试的时间戳（成功或失败均更新）——TTL 冷却的依据：
+     * 失败后也重置计时，避免无网络时每个仓库事件都触发一次注定失败的请求。
+     */
+    var lastAttemptAt: Long = 0
+
     /** 最近一次刷新失败的原因（消息包 key），成功时为 null */
     var lastErrorKey: String? = null
     var lastErrorDetail: String? = null
@@ -50,24 +59,45 @@ class PrivacyEmailCacheService : PersistentStateComponent<MutableMap<String, Pri
     fun get(account: GithubAccount): PrivacyEmailCacheEntry? =
         state[account.id]?.takeIf { it.privacyEmail.isNotEmpty() }
 
+    /**
+     * 是否需要重新获取：距上次获取尝试（成功或失败）超过 TTL。
+     *
+     * 配合 [get] 使用：get 返回 null 或本方法返回 true 时调用方应尝试刷新；
+     * 刷新失败时 [putFailure] 保留旧值供调用方回退校验（离线降级），
+     * 同时更新 lastAttemptAt 使 TTL 内不再重试。
+     */
+    @Synchronized
+    fun shouldRefresh(account: GithubAccount): Boolean {
+        val entry = state[account.id] ?: return true
+        return entry.lastAttemptAt <= 0 ||
+            System.currentTimeMillis() - entry.lastAttemptAt > ttlMillis
+    }
+
     @Synchronized
     fun putSuccess(account: GithubAccount, result: PrivacyEmailFetchResult.Success) {
+        val now = System.currentTimeMillis()
         val entry = state.getOrPut(account.id) { PrivacyEmailCacheEntry() }
         entry.accountLogin = account.name
         entry.serverHost = account.server.host
         entry.privacyEmail = result.privacyEmail
         entry.verifiedEmails = result.verifiedEmails.toMutableList()
         entry.usedFallback = result.usedFallback
+        entry.fetchedAt = now
+        entry.lastAttemptAt = now
         entry.lastErrorKey = null
         entry.lastErrorDetail = null
     }
 
-    /** 记录失败原因（不清空已有可用缓存——离线时仍可用旧值校验） */
+    /**
+     * 记录失败原因；不清空已有可用缓存——离线时调用方可回退旧值继续校验。
+     * 仅推进 lastAttemptAt（TTL 冷却），不推进 fetchedAt（旧值的"新鲜度"保持不变）。
+     */
     @Synchronized
     fun putFailure(account: GithubAccount, failure: PrivacyEmailFetchResult.Failure) {
         val entry = state.getOrPut(account.id) { PrivacyEmailCacheEntry() }
         entry.accountLogin = account.name
         entry.serverHost = account.server.host
+        entry.lastAttemptAt = System.currentTimeMillis()
         entry.lastErrorKey = failure.reasonKey
         entry.lastErrorDetail = failure.detail
     }
@@ -89,6 +119,13 @@ class PrivacyEmailCacheService : PersistentStateComponent<MutableMap<String, Pri
     }
 
     companion object {
+        /** 默认缓存有效期：24 小时（隐私邮箱基于账号数字 ID，短期不会失效，每天一次刷新足够） */
+        const val DEFAULT_TTL_MILLIS: Long = 24 * 60 * 60 * 1000L
+
+        /** TTL 当前值：常态为 [DEFAULT_TTL_MILLIS]，测试中可调小以模拟过期 */
+        @Volatile
+        var ttlMillis: Long = DEFAULT_TTL_MILLIS
+
         fun getInstance(): PrivacyEmailCacheService = service()
     }
 }

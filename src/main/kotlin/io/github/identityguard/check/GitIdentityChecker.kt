@@ -123,26 +123,30 @@ class GitIdentityChecker(private val project: Project) {
         val account = accounts.first { it.name.equals(login, ignoreCase = true) }
         LOG.info("[GitIdentityGuard] 命中账号: $login")
 
-        // ---- 3. 隐私邮箱：缓存优先，未命中则现取（F1） ----
+        // ---- 3. 隐私邮箱：缓存优先，未命中或过期则现取（F1.3 TTL） ----
         val cache = PrivacyEmailCacheService.getInstance()
         var entry = cache.get(account)
-        if (entry == null) {
+        if (entry == null || cache.shouldRefresh(account)) {
             when (val result = PrivacyEmailFetcher.fetch(account, project)) {
                 is PrivacyEmailFetchResult.Success -> {
-                    LOG.info("[GitIdentityGuard] 隐私邮箱获取成功: ${result.privacyEmail} (fallback=${result.usedFallback})")
+                    LOG.info("[GitIdentityGuard] 隐私邮箱获取成功: ${IdentityUtil.maskEmail(result.privacyEmail)} (fallback=${result.usedFallback})")
                     cache.putSuccess(account, result)
                     entry = cache.get(account)
                 }
                 is PrivacyEmailFetchResult.Failure -> {
-                    // 获取失败：记录原因（设置页可见），本轮跳过该账号（F1.2.4）
+                    // 获取失败：记录原因（设置页可见）；有过期旧值则回退继续校验（离线降级），
+                    // 无旧值才跳过本轮（F1.2.4 / F1.3）
                     LOG.warn("[GitIdentityGuard] 隐私邮箱获取失败: ${result.reasonKey} / ${result.detail}")
                     cache.putFailure(account, result)
-                    snapshotService.putSnapshot(notProtected.copy(protected = true, matchedAccountLogin = login))
-                    return
+                    if (entry == null) {
+                        snapshotService.putSnapshot(notProtected.copy(protected = true, matchedAccountLogin = login))
+                        return
+                    }
+                    LOG.info("[GitIdentityGuard] 隐私邮箱刷新失败，回退过期缓存校验 $login")
                 }
             }
         }
-        // 防御：理论上不会为空
+        // 防御：理论上不会为空（成功路径已写缓存；失败回退路径 entry 非空）
         val cacheEntry = entry ?: return
 
         // ---- 4. 读最终生效邮箱（经 git 自身，覆盖 includeIf，F2.3） ----
@@ -170,8 +174,10 @@ class GitIdentityChecker(private val project: Project) {
         val needEmail = !IdentityUtil.emailsMatch(effectiveEmail, cacheEntry.privacyEmail) && !lenientEmail
         val needName = !IdentityUtil.namesMatch(effectiveName, login)
         val mismatch = needEmail || needName
+        // 邮箱值脱敏后进日志：生效邮箱可能是用户真实私人邮箱，明文写入 idea.log 属隐私泄漏
         LOG.info(
-            "[GitIdentityGuard] 生效邮箱=${effectiveEmail ?: "(未设置)"}/期望=${cacheEntry.privacyEmail}(需改=$needEmail); " +
+            "[GitIdentityGuard] 生效邮箱=${IdentityUtil.maskEmail(effectiveEmail) ?: "(未设置)"}" +
+                "/期望=${IdentityUtil.maskEmail(cacheEntry.privacyEmail)}(需改=$needEmail); " +
                 "生效用户名=${effectiveName ?: "(未设置)"}/期望=$login(需改=$needName); 不匹配=$mismatch"
         )
 
