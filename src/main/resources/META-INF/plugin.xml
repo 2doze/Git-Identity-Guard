@@ -1,0 +1,49 @@
+<idea-plugin>
+    <id>io.github.2doze.git-identity-guard</id>
+    <name>Git Identity Guard</name>
+    <vendor url="https://github.com/2doze">2doze</vendor>
+
+    <description><![CDATA[Git Identity Guard is an IntelliJ IDEA plugin that detects Git identity misconfiguration in GitHub repositories and guides you to switch to your GitHub no-reply privacy email.
+<p>Git Identity Guard 是一个 IntelliJ IDEA 插件,用于识别 GitHub 仓库中的 Git 身份配置,并在需要时引导用户切换到 GitHub 隐私邮箱。</p>
+<ul>
+  <li>自动联动 IDEA 内置 GitHub 账号,获取并缓存 noreply 隐私邮箱;</li>
+  <li>在项目打开、Remote 变更、GitHub 账号变化等时机校验最终生效的提交邮箱;</li>
+  <li>严禁静默修改:始终由用户确认后才写入 <code>git config --local user.email</code>;</li>
+  <li>所有比对在本地完成,仅借用 IDEA 已有凭据访问 GitHub API,无遥测。</li>
+</ul>]]></description>
+
+    <depends>com.intellij.modules.platform</depends>
+    <depends>Git4Idea</depends>
+    <depends>org.jetbrains.plugins.github</depends>
+
+    <extensions defaultExtensionNs="com.intellij">
+        <!-- 通知组：方案 A 通知与操作反馈（F3） -->
+        <notificationGroup
+                id="GitIdentityGuardGroup"
+                displayType="BALLOON"
+                isLogByDefault="true"/>
+
+        <!-- 项目启动入口：首次校验 + 账号集合变化监听（F2 第 1、4 项） -->
+        <postStartupActivity
+                implementation="io.github.identityguard.listener.GitIdentityStartupActivity"/>
+
+        <!-- Commit 前校验（F3 方案 B），是否启用由设置控制 -->
+        <checkinHandlerFactory
+                implementation="io.github.identityguard.checkin.GitIdentityCheckinHandlerFactory"/>
+
+        <!-- 设置页（§4）。project 级注册是为了刷新缓存时可借用账号凭据（需 Project 参数） -->
+        <projectConfigurable
+                parentId="tools"
+                id="io.github.2doze.git-identity-guard.settings"
+                instance="io.github.identityguard.settings.GitIdentityGuardConfigurable"
+                bundle="messages.GitIdentityGuardBundle"
+                key="settings.title"
+                nonTrivialProject="true"/>
+    </extensions>
+
+    <!-- Git 仓库变化监听（F2 第 2 项）；节流在校验流程内部完成（F2.4） -->
+    <projectListeners>
+        <listener class="io.github.identityguard.listener.GitRepoCheckListener"
+                  topic="git4idea.repo.GitRepositoryChangeListener"/>
+    </projectListeners>
+</idea-plugin>
