@@ -1,5 +1,6 @@
 package io.github.identityguard.git
 
+import io.github.identityguard.GitIdentityGuardBundle
 import com.intellij.openapi.diagnostic.Logger
 import com.intellij.openapi.project.Project
 import git4idea.commands.Git
@@ -90,9 +91,17 @@ object GitConfigGateway {
                 if (read.value?.trim() == value.trim()) {
                     ConfigWriteResult.Success
                 } else {
-                    ConfigWriteResult.Failure("写入后校验失败：$key 生效值为 ${read.value ?: "(未设置)"}")
+                    ConfigWriteResult.Failure(
+                        GitIdentityGuardBundle.message(
+                            "error.git.verify.mismatch",
+                            key,
+                            read.value ?: GitIdentityGuardBundle.message("email.unset")
+                        )
+                    )
                 }
-            is ConfigReadResult.ExecError -> ConfigWriteResult.Failure("写入后无法校验：${read.message}")
+            is ConfigReadResult.ExecError -> ConfigWriteResult.Failure(
+                GitIdentityGuardBundle.message("error.git.verify.unavailable", read.message)
+            )
         }
     }
 
@@ -101,10 +110,10 @@ object GitConfigGateway {
         val err = result.errorOutputAsJoinedString
         return when {
             err.contains("config.lock", ignoreCase = true) ->
-                "存在 .git/config.lock 锁文件（可能有其他 git 进程正在运行或异常残留）"
+                GitIdentityGuardBundle.message("error.git.config.lock")
             err.contains("Permission denied", ignoreCase = true) || err.contains("Read-only", ignoreCase = true) ->
-                "仓库目录不可写（只读文件系统或权限不足）"
-            err.isBlank() -> "git 退出码 ${result.exitCode}"
+                GitIdentityGuardBundle.message("error.git.repository.readonly")
+            err.isBlank() -> GitIdentityGuardBundle.message("error.git.exit.code", result.exitCode)
             else -> err
         }
     }

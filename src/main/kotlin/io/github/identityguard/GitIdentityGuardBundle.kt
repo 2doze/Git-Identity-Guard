@@ -8,8 +8,8 @@ private const val BUNDLE = "messages.GitIdentityGuardBundle"
 /**
  * 插件消息包（设计文档 §6.2）。
  *
- * 所有用户可见文案统一走这里，后续可无痛切换 DynamicBundle 多语言；
- * 当前版本文案为中文定版。
+ * 所有用户可见文案统一走这里。默认资源为英文，IDE 使用简体中文区域设置时
+ * DynamicBundle 会自动加载 `_zh_CN` 资源。
  */
 object GitIdentityGuardBundle : DynamicBundle(BUNDLE) {
 

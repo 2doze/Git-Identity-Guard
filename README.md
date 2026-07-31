@@ -16,6 +16,7 @@ The plugin never changes Git configuration silently. Applying a suggested identi
 - Shows a warning with actions to apply the privacy identity or ignore that repository.
 - Provides a pre-commit check, enabled by default, that can switch the identity, continue once, or cancel the commit.
 - Supports multiple GitHub accounts, multiple remotes, verified-email leniency, a custom email allowlist, and repository-specific ignores.
+- Localizes the plugin UI in English and Simplified Chinese according to the IDE language.
 - Performs identity comparisons locally, has no telemetry, and only writes repository-local Git configuration.
 
 ## How It Works

@@ -96,7 +96,11 @@ object GitIdentityNotifier {
                 val repo = GitRepositoryManager.getInstance(project).repositories
                     .firstOrNull { it.root.path == repoRootPath }
                 if (repo == null) {
-                    notifyFailure(project, repoRootPath, "仓库当前不可用")
+                    notifyFailure(
+                        project,
+                        repoRootPath,
+                        GitIdentityGuardBundle.message("error.repository.unavailable")
+                    )
                     return
                 }
                 var wroteEmail = false
@@ -117,7 +121,11 @@ object GitIdentityNotifier {
                     }
                 }
                 if (failures.isNotEmpty()) {
-                    notifyFailure(project, repo.presentableUrl, failures.joinToString("；"))
+                    notifyFailure(
+                        project,
+                        repo.presentableUrl,
+                        failures.joinToString(GitIdentityGuardBundle.message("error.separator"))
+                    )
                 } else {
                     notifySuccess(project, repo.presentableUrl, wroteEmail, wroteName, privacyEmail, accountLogin)
                 }

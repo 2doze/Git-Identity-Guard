@@ -124,7 +124,10 @@ class GitIdentityCheckinHandler(
                     val email = snap.privacyEmail
                     if (repo == null || email == null || login == null) {
                         allOk = false
-                        errors.appendLine("${snap.repoPresentableUrl}: 仓库或隐私身份不可用")
+                        errors.appendLine(
+                            "${snap.repoPresentableUrl}: " +
+                                GitIdentityGuardBundle.message("error.repository.identity.unavailable")
+                        )
                         continue
                     }
                     // 与校验器一致的判定：只写"需要修正"的字段（§3.3.4 拆分写入）
