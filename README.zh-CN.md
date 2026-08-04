@@ -38,12 +38,15 @@ Git Identity Guard 是一款 IntelliJ IDEA 插件，用于防止错误的 Git �
 
 ## 安装
 
-使用插件发行 ZIP 安装，无需解压：
+### 方式一：从 JetBrains 插件市场安装（推荐）
 
-1. 从项目 Release 获取 ZIP，或使用 `./gradlew buildPlugin` 从源码构建（Windows 使用 `.\gradlew.bat buildPlugin`）。
-2. 在 IntelliJ IDEA 中打开**设置/偏好设置 > 插件**。
-3. 打开齿轮菜单，选择**从磁盘安装插件...**。
-4. 选择 `build/distributions/` 下的 ZIP，并按提示重启 IDE。
+在**设置/偏好设置 > 插件 > Marketplace** 中搜索 **Git Identity Guard**，或打开[插件市场页面](https://plugins.jetbrains.com/plugin/33265-git-identity-guard)，通过 **Install to...** 菜单选择你的 IDE 安装。按提示重启 IDE。
+
+### 方式二：自行下载源码构建
+
+1. 克隆本仓库并执行 `./gradlew buildPlugin`（Windows 使用 `.\gradlew.bat buildPlugin`），需要 JDK 21，详见[从源码构建](#从源码构建)。
+2. 在 IntelliJ IDEA 中打开**设置/偏好设置 > 插件**，打开齿轮菜单，选择**从磁盘安装插件...**。
+3. 选择 `build/distributions/` 目录下生成的 ZIP（无需解压），并按提示重启 IDE。
 
 ## 快速开始
 

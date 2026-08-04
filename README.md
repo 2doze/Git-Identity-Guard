@@ -38,12 +38,15 @@ No repository is modified merely because it was scanned.
 
 ## Installation
 
-Install a plugin distribution ZIP without extracting it:
+### Option 1: Install from JetBrains Marketplace (recommended)
 
-1. Obtain the ZIP from a project release, or build it from source with `./gradlew buildPlugin` (`.\gradlew.bat buildPlugin` on Windows).
-2. In IntelliJ IDEA, open **Settings/Preferences > Plugins**.
-3. Open the gear menu and select **Install Plugin from Disk...**.
-4. Select the ZIP from `build/distributions/` and restart the IDE when prompted.
+Search for **Git Identity Guard** under **Settings/Preferences > Plugins > Marketplace**, or open the [plugin page](https://plugins.jetbrains.com/plugin/33265-git-identity-guard) and pick your IDE from the **Install to...** menu. Restart the IDE when prompted.
+
+### Option 2: Build from source
+
+1. Clone the repository and run `./gradlew buildPlugin` (`.\gradlew.bat buildPlugin` on Windows). JDK 21 is required; see [Building from Source](#building-from-source) for details.
+2. In IntelliJ IDEA, open **Settings/Preferences > Plugins**, open the gear menu, and select **Install Plugin from Disk...**.
+3. Select the generated ZIP from `build/distributions/` without extracting it, and restart the IDE when prompted.
 
 ## Getting Started
 
